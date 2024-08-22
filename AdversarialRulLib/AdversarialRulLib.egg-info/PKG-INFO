@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: AdversarialRulLib
+Version: 0.1
+Summary: This library aims to implement the different attacks and defense methods against predictive maintenance.
+Home-page: https://github.com/PF-Maillard/AdversarialRulLib
+Author: Pierre-Francois Maillard
+License: MIT
+Requires-Python: >=3.10.12
+Requires-Dist: pandas>=2.1.1
+Requires-Dist: numpy>=1.24.1
+Requires-Dist: torch>=2.2.1
+Requires-Dist: tqdm>=4.66.1
+Requires-Dist: matplotlib>=3.7.3
+Requires-Dist: scipy>=1.11.2
+Requires-Dist: xgboost>=2.1.1
+Requires-Dist: scikit-learn>=1.1.3
