@@ -7,52 +7,52 @@ from tqdm import tqdm
 from . import Utils as UtilsTool
 from .DefenseModels import GRUStudentModel
 
-def Fgsm(model, Objective, X, y, epsilon, device):
-    model.train()
+def Fgsm(Model, Objective, X, y, Epsilon = 0.2, Device = "cpu"):
+    Model.train()
     Adv = X.clone()
     Adv.requires_grad = True
     criterion = nn.MSELoss()
     
-    output = model(Adv)
+    output = Model(Adv)
     Target = torch.full_like(y, Objective)
     loss = criterion(output, Target)
     loss.backward()
     Grad = Adv.grad.data
-    SX = Grad.sign().to(device)
-    Adv = Adv + epsilon * SX
+    SX = Grad.sign().to(Device)
+    Adv = Adv + Epsilon * SX
     Adv = torch.clamp(Adv, min=0.0, max=1.0)
     return Adv
 
-def Bim(model, Objective, X, y, epsilon, epochs, device):
-    model.train()
+def Bim(Model, Objective, X, y, Epsilon = 0.01, Epochs = 30, Device = "cpu"):
+    Model.train()
     Adv = X.clone()
     criterion = nn.MSELoss()
     
-    for i in range(epochs):
+    for i in range(Epochs):
         Adv.requires_grad = True
-        output = model(Adv)
+        output = Model(Adv)
         Target = torch.full_like(y, Objective)
         loss = criterion(output, Target)
         loss.backward()
         Grad = Adv.grad.data
         
-        SX = Grad.sign().to(device)
+        SX = Grad.sign().to(Device)
         with torch.no_grad():
-            Adv = Adv + epsilon * SX
+            Adv = Adv + Epsilon * SX
             
     Adv = torch.clamp(Adv, min=0.0, max=1.0)
     return Adv
 
-def CW(model, Objective, X, y, LearningRate, c, epochs, device):
-    model.train()
+def CW(Model, Objective, X, y, LearningRate = 0.01, c = 1, Epochs = 100, Device = "cpu"):
+    Model.train()
     Adv = X.clone()
     Adv.requires_grad = True
     Optimizer = optim.Adam([Adv], lr=LearningRate)
     MseLoss = nn.MSELoss()
     
-    for i in range(epochs):
+    for i in range(Epochs):
         Optimizer.zero_grad()
-        Output = model(Adv)
+        Output = Model(Adv)
         Target = torch.full_like(y, Objective)
         TargetLoss = MseLoss(Output, Target)
         DiffLoss = MseLoss(Adv, X)
@@ -64,21 +64,21 @@ def CW(model, Objective, X, y, LearningRate, c, epochs, device):
             Adv.clamp_(0.0, 1.0)
     return Adv
 
-def TestAttacks(model, X, y, AttacksParameters, device):
+def TestAttacks(Model, X, y, AttacksParameters, Device = "cpu"):
     
-    X, y = X.to(device).to(torch.float32), y.to(device).to(torch.float32)
+    X, y = X.to(Device).to(torch.float32), y.to(Device).to(torch.float32)
 
-    AdversarialDataFgsm = Fgsm(model, AttacksParameters["FGSM"]["Objective"], X, y, AttacksParameters["FGSM"]["Epsilon"], device)
-    AdversarialDataBim = Bim(model, AttacksParameters["BIM"]["Objective"], X, y, AttacksParameters["BIM"]["Epsilon"], AttacksParameters["BIM"]["Iterations"], device)
-    AdversarialDataCW = CW(model, AttacksParameters["CW"]["Objective"], X, y, AttacksParameters["CW"]["LearningRate"], AttacksParameters["CW"]["c"], AttacksParameters["CW"]["Iterations"], device)
+    AdversarialDataFgsm = Fgsm(Model, AttacksParameters["FGSM"]["Objective"], X, y, Epsilon = AttacksParameters["FGSM"]["Epsilon"], Device = Device)
+    AdversarialDataBim = Bim(Model, AttacksParameters["BIM"]["Objective"], X, y, Epsilon = AttacksParameters["BIM"]["Epsilon"], Epochs = AttacksParameters["BIM"]["Iterations"], Device = Device)
+    AdversarialDataCW = CW(Model, AttacksParameters["CW"]["Objective"], X, y, LearningRate = AttacksParameters["CW"]["LearningRate"], c = AttacksParameters["CW"]["c"], Epochs = AttacksParameters["CW"]["Iterations"], Device = Device)
     
-    Infos = UtilsTool.GetInfos(X, y, 0, AdversarialDataFgsm, model)
+    Infos = UtilsTool.GetInfos(X, y, 0, AdversarialDataFgsm, Model)
     print("FGSM:", Infos)
 
-    Infos = UtilsTool.GetInfos(X, y, 0, AdversarialDataBim, model)
+    Infos = UtilsTool.GetInfos(X, y, 0, AdversarialDataBim, Model)
     print("BIM:", Infos)
 
-    Infos = UtilsTool.GetInfos(X, y, 0, AdversarialDataCW, model)
+    Infos = UtilsTool.GetInfos(X, y, 0, AdversarialDataCW, Model)
     print("CW:", Infos)
     
     return AdversarialDataFgsm, AdversarialDataBim, AdversarialDataCW
@@ -115,7 +115,7 @@ def CreateSurrogateModel(Model, Student = None, Epochs = 30, LearningRate = 0.01
         TrainLoss = 0
         for batch, (x,y) in enumerate(MyDataloader):
             x, _ = x.to(Device).to(torch.float32), y.to(Device).to(torch.float32)
-            x_numpy = UtilsTool.flatten_sequences(x.detach().cpu().numpy())
+            x_numpy = UtilsTool.Flatten_sequences(x.detach().cpu().numpy())
             TeacherPred = Model.predict(x_numpy)  
             Studentpred = Student(x.float())
             TeacherPred_torch = torch.tensor(TeacherPred).to(Device)

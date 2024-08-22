@@ -1,6 +1,8 @@
 Old/
 
-Examples/DatasetRUL/*
+Examples/DatasetNasaFan/*
+Examples/DatasetPHM/*
 
-Examples/DatasetRUL/.gitkeep
-Examples/Models/.gitkeep
+!Examples/DatasetNasaFan/.gitkeep
+!Examples/DatasetPHM/.gitkeep
+!Examples/Models/.gitkeep

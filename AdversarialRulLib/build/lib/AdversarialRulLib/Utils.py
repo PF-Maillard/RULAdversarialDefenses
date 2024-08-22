@@ -17,7 +17,7 @@ def PredRmse(tensor1, tensor2):
     rmse = torch.sqrt(mse)
     return rmse
 
-def validation(model, valloader, device):
+def Validation(model, valloader, device):
     model.eval()
     Loss_MSE = nn.MSELoss()
     
@@ -30,7 +30,7 @@ def validation(model, valloader, device):
         
     return val_loss
     
-def test(MyModel, testloader, device):
+def TestModel(MyModel, testloader, device):
     MyModel.eval()
     
     X, y = next(iter(testloader))
@@ -67,7 +67,7 @@ def TrainModel(model, trainloader, valloader,epochs, learning_rate, device):
             optimizer.step()
         
         if (i+1) % 1 == 0:
-            val_loss = validation(model, valloader, device)
+            val_loss = Validation(model, valloader, device)
             model.train()
             print(f'epoch:{i+1}, avg_train_loss:{L/len(trainloader)}, val_loss:{val_loss}')
             
@@ -96,7 +96,7 @@ def DataLoaderToNumpy(DataLoader):
         Labels.append(labels.numpy())
     return np.concatenate(Inputs), np.concatenate(Labels)
 
-def flatten_sequences(X):
+def Flatten_sequences(X):
     return X.reshape(X.shape[0], -1)
 
 def DisplayRMSE(Model, X, y, Index):
@@ -106,7 +106,7 @@ def DisplayRMSE(Model, X, y, Index):
     print(Index, "RMSE ", rmse.item())
     
 def DisplayEnsembleRMSE(Model, X, y, Index):
-    XTest = flatten_sequences(X.detach().cpu().numpy())
+    XTest = Flatten_sequences(X.detach().cpu().numpy())
     pred = Model.predict(XTest)
     mse = np.mean((pred - y.cpu().numpy()) ** 2)
     rmse = np.sqrt(mse)

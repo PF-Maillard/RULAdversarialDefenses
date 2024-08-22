@@ -22,7 +22,7 @@ def AdversarialTraining(Model, TrainLoader, ValidationLoader, TestLoader, Object
     NewModel =  TrainAdversarialModel(NewModel, TrainLoader, ValidationLoader, Objective = Objective, AdversarialMethod = AdversarialMethod, AttackParameters = AttackParameters, Epochs = Epochs, LearningRate = LearningRate, Device = Device, Verbose = Verbose)  
     
     if Verbose == 1:
-        Mse, L1, Rrmse, _, _ = UtilsTool.test(NewModel, TestLoader, Device)
+        Mse, L1, Rrmse, _, _ = UtilsTool.TestModel(NewModel, TestLoader, Device)
         print(f'MSE:{round(Mse,2)}, L1:{round(L1,2)}, RMSE:{round(Rrmse,2)}')
     
     return NewModel
@@ -40,7 +40,7 @@ def EnsembleInputSqueezing(Model, TrainLoader, ValidationLoader, TestLoader, Max
     ClassicalTraining(NewModel, TrainLoader, ValidationLoader, Epochs = Epochs, LearningRate = LearningRate, Device = Device, Verbose = Verbose)  
     
     if Verbose == 1:
-        Mse, L1, Rrmse, _, _ = UtilsTool.test(NewModel, TestLoader, Device)
+        Mse, L1, Rrmse, _, _ = UtilsTool.TestModel(NewModel, TestLoader, Device)
         print(f'MSE:{round(Mse,2)}, L1:{round(L1,2)}, RMSE:{round(Rrmse,2)}')
     
     return NewModel
@@ -58,7 +58,7 @@ def InputSqueezing(Model, TrainLoader, ValidationLoader, TestLoader, Coefficient
     ClassicalTraining(NewModel, TrainLoader, ValidationLoader, Epochs = Epochs, LearningRate = LearningRate, Device = Device, Verbose = Verbose)  
     
     if Verbose == 1:
-        Mse, L1, Rrmse, _, _ = UtilsTool.test(NewModel, TestLoader, Device)
+        Mse, L1, Rrmse, _, _ = UtilsTool.TestModel(NewModel, TestLoader, Device)
         print(f'MSE:{round(Mse,2)}, L1:{round(L1,2)}, RMSE:{round(Rrmse,2)}')
     
     return NewModel
@@ -76,7 +76,7 @@ def InputRandomization(Model, TrainLoader, ValidationLoader, TestLoader, Coeffic
     ClassicalTraining(NewModel, TrainLoader, ValidationLoader, Epochs = Epochs, LearningRate = LearningRate, Device = Device, Verbose = Verbose)  
     
     if Verbose == 1:
-        Mse, L1, Rrmse, _, _ = UtilsTool.test(NewModel, TestLoader, Device)
+        Mse, L1, Rrmse, _, _ = UtilsTool.TestModel(NewModel, TestLoader, Device)
         print(f'MSE:{round(Mse,2)}, L1:{round(L1,2)}, RMSE:{round(Rrmse,2)}')
     
     return NewModel
@@ -92,8 +92,8 @@ def EnsembleMethods(TrainLoader, ValidationLoader, TestLoader, RFEstimators = 10
     X_train = np.concatenate([X_train, X_val], axis=0)
     y_train = np.concatenate([y_train, y_val], axis=0)
    
-    XTrain = UtilsTool.flatten_sequences(X_train)
-    XTest = UtilsTool.flatten_sequences(X_test)
+    XTrain = UtilsTool.Flatten_sequences(X_train)
+    XTest = UtilsTool.Flatten_sequences(X_test)
     
     if Verbose == 1:
         print(f'X_train shape: {X_train.shape}, y_train shape: {y_train.shape}')
@@ -122,20 +122,24 @@ def TrainAdversarialValidation(Model, ValidationLoader, Objective = 0, Adversari
     Model.eval()
     Criterion = torch.nn.MSELoss()
     ValidationLoss = 0
+    
     for batch, (X,y) in enumerate(ValidationLoader):
         X, y = X.float().to(Device), y.float().to(Device)
 
         if AdversarialMethod == "Fgsm" and AttackParameters != None:
-            Adv = AttacksTool.Fgsm(Model, 300 - Objective, X, y, AttackParameters["Epsilon"], Device)
+            Adv = AttacksTool.Fgsm(Model, Objective, X, y, AttackParameters["Epsilon"], Device)
         elif AdversarialMethod == "Bim" and AttackParameters != None:
-            Adv = AttacksTool.Bim(Model, 300 - Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
+            Adv = AttacksTool.Bim(Model, Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
         elif AdversarialMethod == "CW" and AttackParameters != None:
             Adv = AttacksTool.CW(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
         else:
             Adv = X
 
-        Pred = Model(Adv)
-        Loss = Criterion(Pred, y)
+        X_combined = torch.cat((X, Adv), dim=0)
+        y_combined = torch.cat((y, y), dim=0)
+
+        Pred = Model(X_combined)
+        Loss = Criterion(Pred, y_combined)
         ValidationLoss+= Loss.item()
     Model.train()
     return ValidationLoss/len(ValidationLoader)
@@ -150,8 +154,13 @@ def TrainAdversarialModel(Model, TrainLoader, ValidationLoader, AdversarialMetho
     if AttackParameters == None:
         print("ERROR: Miss attack parameters")
     
+    if AdversarialMethod == "Fgsm" or  AdversarialMethod == "Bim":
+        if Objective == 0:
+            Objective = 300
+        else:
+            Objective = 0
+            
     Model.train()
-    L = 0
     for i in tqdm(range(Epochs)):
         TrainLoss = 0
         Model.train()
@@ -159,9 +168,9 @@ def TrainAdversarialModel(Model, TrainLoader, ValidationLoader, AdversarialMetho
             
             X, y = X.to(Device).to(torch.float32), y.to(Device).to(torch.float32)
             if AdversarialMethod == "Fgsm" and AttackParameters != None:
-                Adv = AttacksTool.Fgsm(Model, 300 - Objective, X, y, AttackParameters["Epsilon"], Device)
+                Adv = AttacksTool.Fgsm(Model, Objective, X, y, AttackParameters["Epsilon"], Device)
             elif AdversarialMethod == "Bim" and AttackParameters != None:
-                Adv = AttacksTool.Bim(Model, 300 - Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
+                Adv = AttacksTool.Bim(Model, Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
             elif AdversarialMethod == "CW" and AttackParameters != None:
                 Adv = AttacksTool.CW(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
             else:
@@ -172,7 +181,7 @@ def TrainAdversarialModel(Model, TrainLoader, ValidationLoader, AdversarialMetho
             
             y_pred = Model(X_combined)
             Loss = Criterion(y_pred, y_combined)
-            L += Loss.item()
+            TrainLoss += Loss.item()
             Optimizer.zero_grad()
             Loss.backward()
             Optimizer.step()
@@ -184,7 +193,7 @@ def TrainAdversarialModel(Model, TrainLoader, ValidationLoader, AdversarialMetho
             
     return Model
    
-def AutoEncoderValidation(Model, ValidationLoader, Device):
+def AutoEncoderValidation(Model, ValidationLoader, Device="cpu"):
     Criterion = torch.nn.MSELoss()
     Model.eval()
     ValidationLoss = 0
@@ -220,7 +229,7 @@ def GenerateAutoEncoder(Model, TrainLoader, ValidationLoader, RepresentationDime
             TrainLoss += Loss.item()
             
         if Verbose == 1 and (i+1) % 1 == 0:
-            ValLoss = AutoEncoderValidation(MyAutoEncoder, ValidationLoader, Device)
+            ValLoss = AutoEncoderValidation(MyAutoEncoder, ValidationLoader, Device=Device)
             print(f'Epoch:{i+1}, Train loss:{TrainLoss/len(TrainLoader)}, Validation loss:{ValLoss}')
     NewModel  = AutoEncoderDefenseModel(MyAutoEncoder, Model)  
     return NewModel
@@ -238,23 +247,24 @@ def InputPurificationAutoEncoder(Model, TrainLoader, ValidationLoader, TestLoade
     ClassicalTraining(NewModel, TrainLoader, ValidationLoader, Epochs = EpochsModel, LearningRate = LearningRateModel, Device = Device, Verbose = Verbose)  
     
     if Verbose == 1:
-        Mse, L1, Rrmse, _, _ = UtilsTool.test(NewModel, TestLoader, Device)
+        Mse, L1, Rrmse, _, _ = UtilsTool.TestModel(NewModel, TestLoader, Device)
         print(f'MSE:{round(Mse,2)}, L1:{round(L1,2)}, RMSE:{round(Rrmse,2)}')
     
     return NewModel
     
-def DetectionValidation(DetectionModel, Model, ValidationLoader, Objective, Epsilon, Device, AdversarialMethod = "Fgsm", AttackParameters= None):
+def DetectionValidation(DetectionModel, Model, ValidationLoader, Objective = 0, Device = "cpu", AdversarialMethod = "Fgsm", AttackParameters= None):
     Criterion = torch.nn.MSELoss()
     DetectionModel.eval()
     Model.eval()
     ValidationLoss = 0
+    
     for batch, (X,y) in enumerate(ValidationLoader):
         X, y = X.float().to(Device), y.float().to(Device)
         
         if AdversarialMethod == "Fgsm" and AttackParameters != None:
-            Adv = AttacksTool.Fgsm(Model, 300 -Objective, X, y, AttackParameters["Epsilon"], Device)
+            Adv = AttacksTool.Fgsm(Model, Objective, X, y, AttackParameters["Epsilon"], Device)
         elif AdversarialMethod == "Bim" and AttackParameters != None:
-            Adv = AttacksTool.Bim(Model, 300 -Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
+            Adv = AttacksTool.Bim(Model, Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
         elif AdversarialMethod == "CW" and AttackParameters != None:
             Adv = AttacksTool.CW(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
         else:
@@ -277,14 +287,16 @@ def GenerateDetectionModel(Model, TrainLoader, ValidationLoader, AdversarialMeth
     Model.eval()
     Data = next(iter(TrainLoader))
     
-    input_size = Data[0].shape[2] 
-    hidden_size = 128 
-    num_layers = 8    
-
-    Detectionmodel = GRUDetectionModel(input_size, hidden_size, num_layers).to(Device)
+    Detectionmodel = GRUDetectionModel(InputSize = Data[0].shape[2] , HiddenSize = 128, NbLayers = 3).to(Device)
 
     Criterion = nn.MSELoss()
     Optimizer = torch.optim.Adam(Detectionmodel.parameters(), lr=LearningRate)
+
+    if AdversarialMethod == "Fgsm" or  AdversarialMethod == "Bim":
+        if Objective == 0:
+            Objective = 300
+        else:
+            Objective = 0
 
     if Verbose == 1:
         print("TRAINING: Model")
@@ -295,9 +307,9 @@ def GenerateDetectionModel(Model, TrainLoader, ValidationLoader, AdversarialMeth
         for batch, (X,y) in enumerate(TrainLoader):
             X, y = X.to(Device).to(torch.float32), y.to(Device).to(torch.float32)
             if AdversarialMethod == "Fgsm" and AttackParameters != None:
-                Adv = AttacksTool.Fgsm(Model, 300 - Objective, X, y, AttackParameters["Epsilon"], Device)
+                Adv = AttacksTool.Fgsm(Model, Objective, X, y, AttackParameters["Epsilon"], Device)
             elif AdversarialMethod == "Bim" and AttackParameters != None:
-                Adv = AttacksTool.Bim(Model, 300 - Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
+                Adv = AttacksTool.Bim(Model, Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
             elif AdversarialMethod == "CW" and AttackParameters != None:
                 Adv = AttacksTool.CW(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
             else:
@@ -317,7 +329,7 @@ def GenerateDetectionModel(Model, TrainLoader, ValidationLoader, AdversarialMeth
             Optimizer.step()
         
         if Verbose == 1 and (i+1) % 1 == 0:
-            ValLoss = DetectionValidation(Detectionmodel, Model, ValidationLoader, Objective, Device, AdversarialMethod = AdversarialMethod, AttackParameters = AttackParameters)
+            ValLoss = DetectionValidation(Detectionmodel, Model, ValidationLoader, Objective=Objective, Device=Device, AdversarialMethod = AdversarialMethod, AttackParameters = AttackParameters)
             print(f'Epoch:{i+1}, Train loss:{TrainLoss/len(TrainLoader)}, Validation loss:{ValLoss}')
             
     return Detectionmodel
@@ -331,7 +343,7 @@ def AdversarialDetection(Model, TrainLoader, ValidationLoader, TestLoader, Adver
     DetectionModel = GenerateDetectionModel(Model, TrainLoader, ValidationLoader, Objective = Objective, AdversarialMethod = AdversarialMethod, AttackParameters = AttackParameters, Epochs = Epochs, LearningRate = LearningRate, Device = Device, Verbose = Verbose )
     
     if Verbose == 1:
-        Mse, L1, Rrmse, _, _ = UtilsTool.test(DetectionModel, TestLoader, Device)
+        Mse, L1, Rrmse, _, _ = UtilsTool.TestModel(DetectionModel, TestLoader, Device)
         print(f'MSE:{round(Mse,2)}, L1:{round(L1,2)}, RMSE:{round(Rrmse,2)}')
 
     return DetectionModel
@@ -380,7 +392,7 @@ def DefensiveDistillation(Model, TrainLoader, ValidationLoader, TestLoader, Epoc
     NewModel = GenerateStudentModel(NewModel, TrainLoader, ValidationLoader, Epochs = Epochs, LearningRate = LearningRate, Device = Device, Verbose = Verbose)
 
     if Verbose == 1:
-        Mse, L1, Rrmse, _, _ = UtilsTool.test(NewModel, TestLoader, Device)
+        Mse, L1, Rrmse, _, _ = UtilsTool.TestModel(NewModel, TestLoader, Device)
         print(f'MSE:{round(Mse,2)}, L1:{round(L1,2)}, RMSE:{round(Rrmse,2)}')
         
     return NewModel

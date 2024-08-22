@@ -18,7 +18,7 @@ def AdversarialTraining(Model, TrainLoader, ValidationLoader, TestLoader, Object
     if Verbose == 1:
         print("Defense adversarial training")
     
-    UtilsTool.InitModel(Model, Device)
+    UtilsTool.InitModel(NewModel, Device)
     NewModel =  TrainAdversarialModel(NewModel, TrainLoader, ValidationLoader, Objective = Objective, AdversarialMethod = AdversarialMethod, AttackParameters = AttackParameters, Epochs = Epochs, LearningRate = LearningRate, Device = Device, Verbose = Verbose)  
     
     if Verbose == 1:
