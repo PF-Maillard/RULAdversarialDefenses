@@ -376,7 +376,7 @@ def GenerateStudentModel(Model, TrainLoader, ValidationLoader, Epochs =30, Learn
             Optimizer.step()
         
         if Verbose == 1 and (i+1) % 1 == 0:
-            ValLoss = UtilsTool.validation(Student, ValidationLoader, Device)
+            ValLoss = UtilsTool.Validation(Student, ValidationLoader, Device)
             Student.train()
             print(f'Epoch:{i+1}, Train loss:{TrainLoss/len(TrainLoader)}, Validation loss:{ValLoss}')
 
