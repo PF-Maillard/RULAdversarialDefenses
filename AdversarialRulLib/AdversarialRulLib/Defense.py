@@ -130,8 +130,10 @@ def TrainAdversarialValidation(Model, ValidationLoader, Objective = 0, Adversari
             Adv = AttacksTool.Fgsm(Model, Objective, X, y, AttackParameters["Epsilon"], Device)
         elif AdversarialMethod == "Bim" and AttackParameters != None:
             Adv = AttacksTool.Bim(Model, Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
-        elif AdversarialMethod == "CW" and AttackParameters != None:
-            Adv = AttacksTool.CW(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
+        elif AdversarialMethod == "L2" and AttackParameters != None:
+            Adv = AttacksTool.L2(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
+        elif AdversarialMethod == "L0" and AttackParameters != None:
+            Adv = AttacksTool.L0(Model, Objective, X, y, LearningRate = AttackParameters["LearningRate"], c =AttackParameters["c"], Epochs = AttackParameters["Iterations"], k = AttackParameters["k"], p = AttackParameters["p"], s = AttackParameters["s"],Device = Device)
         else:
             Adv = X
 
@@ -171,8 +173,10 @@ def TrainAdversarialModel(Model, TrainLoader, ValidationLoader, AdversarialMetho
                 Adv = AttacksTool.Fgsm(Model, Objective, X, y, AttackParameters["Epsilon"], Device)
             elif AdversarialMethod == "Bim" and AttackParameters != None:
                 Adv = AttacksTool.Bim(Model, Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
-            elif AdversarialMethod == "CW" and AttackParameters != None:
-                Adv = AttacksTool.CW(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
+            elif AdversarialMethod == "L2" and AttackParameters != None:
+                Adv = AttacksTool.L2(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
+            elif AdversarialMethod == "L0" and AttackParameters != None:
+                Adv = AttacksTool.L0(Model, Objective, X, y, LearningRate = AttackParameters["LearningRate"], c =AttackParameters["c"], Epochs = AttackParameters["Iterations"], k = AttackParameters["k"], p = AttackParameters["p"], s = AttackParameters["s"],Device = Device)
             else:
                 Adv = X
             
@@ -265,8 +269,10 @@ def DetectionValidation(DetectionModel, Model, ValidationLoader, Objective = 0, 
             Adv = AttacksTool.Fgsm(Model, Objective, X, y, AttackParameters["Epsilon"], Device)
         elif AdversarialMethod == "Bim" and AttackParameters != None:
             Adv = AttacksTool.Bim(Model, Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
-        elif AdversarialMethod == "CW" and AttackParameters != None:
-            Adv = AttacksTool.CW(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
+        elif AdversarialMethod == "L2" and AttackParameters != None:
+            Adv = AttacksTool.L2(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
+        elif AdversarialMethod == "L0" and AttackParameters != None:
+            Adv = AttacksTool.L0(Model, Objective, X, y, LearningRate = AttackParameters["LearningRate"], c =AttackParameters["c"], Epochs = AttackParameters["Iterations"], k = AttackParameters["k"], p = AttackParameters["p"], s = AttackParameters["s"],Device = Device)
         else:
             Adv = X
         
@@ -310,8 +316,10 @@ def GenerateDetectionModel(Model, TrainLoader, ValidationLoader, AdversarialMeth
                 Adv = AttacksTool.Fgsm(Model, Objective, X, y, AttackParameters["Epsilon"], Device)
             elif AdversarialMethod == "Bim" and AttackParameters != None:
                 Adv = AttacksTool.Bim(Model, Objective, X, y, AttackParameters["Epsilon"], AttackParameters["Iterations"], Device)
-            elif AdversarialMethod == "CW" and AttackParameters != None:
-                Adv = AttacksTool.CW(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
+            elif AdversarialMethod == "L2" and AttackParameters != None:
+                Adv = AttacksTool.L2(Model, Objective, X, y, AttackParameters["LearningRate"], AttackParameters["c"], AttackParameters["Iterations"], Device)
+            elif AdversarialMethod == "L0" and AttackParameters != None:
+                Adv = AttacksTool.L0(Model, Objective, X, y, LearningRate = AttackParameters["LearningRate"], c =AttackParameters["c"], Epochs = AttackParameters["Iterations"], k = AttackParameters["k"], p = AttackParameters["p"], s = AttackParameters["s"],Device = Device)
             else:
                 Adv = X
             

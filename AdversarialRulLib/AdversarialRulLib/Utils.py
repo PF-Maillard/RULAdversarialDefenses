@@ -70,7 +70,13 @@ def TrainModel(model, trainloader, valloader,epochs, learning_rate, device):
             val_loss = Validation(model, valloader, device)
             model.train()
             print(f'epoch:{i+1}, avg_train_loss:{L/len(trainloader)}, val_loss:{val_loss}')
-            
+      
+def GetL0(X, Z):
+    L2 = ((X - Z) ** 2)
+    Result = torch.sum(L2, dim=1)
+    Result = torch.sum(Result != 0, dim=1)
+    Result = Result.float().mean()
+    return Result            
     
 def GetInfos(X, y, Objective, AX, model):
     X, AX, y, = X.to(torch.float32), AX.to(torch.float32), y.to(torch.float32)
@@ -79,12 +85,14 @@ def GetInfos(X, y, Objective, AX, model):
     average = torch.mean(output.float()).item()
     averagey = torch.mean(y.float()).item()
     rmse_pred = PredRmse(y.float(), output.float()).item()
+    MyL0 = GetL0(X.float(), AX.float()).cpu()
     extra_info = {
         'RealRUL': averagey,
         'Objective': Objective,
         'PredRUL': average,
         'RMSE_adversarial': rmse_adversarials,
-        'RMSE_pred': rmse_pred
+        'RMSE_pred': rmse_pred,
+        'L0': MyL0
     }
     return extra_info
     
